@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "firstName": {
+      "type": "string"
+    },
+    "lastName": {
+      "type": "string"
+    },
+    "dob": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phoneNumber": {
+      "type": "string"
+    },
+    "employeeId": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "firstName",
+    "lastName",
+    "dob",
+    "address",
+    "email",
+    "phoneNumber",
+    "employeeId"
+  ]
+}

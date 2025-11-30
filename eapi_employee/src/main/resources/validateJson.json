@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "employeeId": {
+      "type": "integer"
+    },
+    "jobTitle": {
+      "type": "string"
+    },
+    "department": {
+      "type": "string"
+    },
+    "hireDate": {
+      "type": "string"
+    },
+    "salary": {
+      "type": "integer"
+    },
+    "manager": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "employeeId",
+    "jobTitle",
+    "department",
+    "hireDate",
+    "salary",
+    "manager",
+    "status"
+  ]
+}

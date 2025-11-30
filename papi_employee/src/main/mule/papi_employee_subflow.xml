@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="0f606edc-bcf0-4637-b51b-5d9984ef2fb3" basePath="/api" >
+		<http:request-connection host="localhost" port="8082" />
+	</http:request-config>
+	<error-handler name="papi-errorHandler" doc:id="4f5b7e52-77ee-4fd4-9b20-b107b46b3f59" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="49a47a43-00e7-4077-b4b4-55c5f56e1844" >
+			<logger level="ERROR" doc:name="Logger" doc:id="91851f7f-a1d1-47f1-9306-ec14907e5479" message="#[error.description]"/>
+		</on-error-propagate>
+	</error-handler>
+	<flow name="employeesgetflow" doc:id="bc923c48-4cb0-4086-802a-296da1cb15c2" >
+		<try doc:name="Try" doc:id="9ee1747f-1878-4506-aafc-591f66508bab" >
+			<http:request method="GET" doc:name="Request" doc:id="0a4b0891-aeaf-4185-8b85-063d89168a2a" config-ref="HTTP_Request_configuration" path="/employees"/>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="f0c9c7e3-b860-4936-bb50-95b44f754a95" variableName="employees"/>
+		<try doc:name="Try" doc:id="49496cf0-7ef9-40a6-a88f-242e37558a5b" >
+			<http:request method="GET" doc:name="Request" doc:id="d948df5c-e3c4-4d81-9b36-e1e2af649293" config-ref="HTTP_Request_configuration" path="/empPersonal"/>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="291d32c7-21bd-4a46-b6ab-1b4514e67a00" variableName="empPersonal"/>
+		<ee:transform doc:name="Transform Message" doc:id="9b1c21f6-1e53-42a9-a9bf-d5b63e36324d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+var employees=vars.employees
+var empPersonal=vars.empPersonal
+---
+employees map ((item) -> {
+	employeeId: item.employeeId,
+	jobTitle: item.jobTitle,
+	department: item.department,
+	hireDate: item.hireDate,
+	salary: item.salary,
+	manager: item.manager,
+	status: item.status,
+	employeePersonalInfo:
+		empPersonal filter((p) -> p.employeeId == item.employeeId)
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="employeespostflow" doc:id="db66c08f-b773-489c-92e4-b280a80e2ef3" >
+		<try doc:name="Try" doc:id="9bd14678-0ae2-4a98-b77c-bdca6c8bc232" >
+			<http:request method="POST" doc:name="Request" doc:id="28b280e2-47b4-481e-894e-45deab22899f" config-ref="HTTP_Request_configuration" path="/employees"/>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+	</flow>
+	<flow name="employeesputflow" doc:id="182304eb-5f10-4525-81a5-7d5358c77e1f" >
+		<try doc:name="Try" doc:id="4920819c-33e3-4708-a96b-89272c398723" >
+			<http:request method="PUT" doc:name="Request" doc:id="6de4dd1f-c02a-4860-8e38-4452e08fcaf4" config-ref="HTTP_Request_configuration" path="/employees">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	id : attributes.queryParams.id
+}]]]></http:query-params>
+		</http:request>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+	</flow>
+	<flow name="employeesdeleteflow" doc:id="dca46697-2ac7-4c72-aa44-0e81d098da10" >
+		<try doc:name="Try" doc:id="cceb95b1-803a-49a8-826d-4e8b20e2a94a" >
+			<http:request method="DELETE" doc:name="Request" doc:id="8647fd0b-adbe-41e0-8dc2-f82a2fe660e9" config-ref="HTTP_Request_configuration" path="/employees">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	id : attributes.queryParams.id
+}]]]></http:query-params>
+		</http:request>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+	</flow>
+	<!-- [STUDIO:"empPersonalgetflow"]<flow name="empPersonalgetflow" doc:id="10cf4e1d-429e-45c8-bc1d-cc4676a4344d" >
+		<try doc:name="Try" doc:id="7188344c-3349-4444-a0e8-0e29ac626443" >
+			<ee:transform doc:name="Transform Message" doc:id="0751c2d6-c297-46a0-a380-86813d761791">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+&#45;&#45;-
+payload&#93;&#93;></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+	</flow> [STUDIO] -->
+	<!-- [STUDIO:"empPersonalpostflow"]<flow name="empPersonalpostflow" doc:id="77360360-2f19-431a-b4e6-82d1240837db" >
+		<http:request method="POST" doc:name="Request" doc:id="fbf09d98-838e-43e5-b831-d19bf1dd2153" config-ref="HTTP_Request_configuration" path="/empPersonal">
+			<http:query-params ><![CDATA[#[output application/java
+&#45;&#45;-
+{
+	id : attributes.queryParams.id
+}&#93;&#93;&#93;></http:query-params>
+		</http:request>
+	</flow> [STUDIO] -->
+	<flow name="empPersonalputflow" doc:id="5a555288-f986-41a3-b665-a6e06da7c62c" >
+		<try doc:name="Try" doc:id="3ff4ea23-5c75-4ab0-8273-93979aaeb7b0" >
+			<http:request method="PUT" doc:name="Request" doc:id="d943c136-2603-4db6-b8b5-b1ad76b19c83" config-ref="HTTP_Request_configuration" path="/empPersonal">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	id : attributes.queryParams.id
+}]]]></http:query-params>
+		</http:request>
+			<error-handler ref="papi-errorHandler" />
+		</try>
+	</flow>
+</mule>
