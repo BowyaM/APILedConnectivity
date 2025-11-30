@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="dcea9177-6e56-4b85-b9d1-b9f8dea03760" >
+		<db:my-sql-connection host="${mysql.host}" port="${mysql.port}" user="${mysql.user}" password="${secure::mysql.password}" database="${mysql.db}" />
+	</db:config>
+	<global-property doc:name="Global Property" doc:id="c8f2c4c5-930a-48c8-9652-bbfa8c2d4f49" name="env" value="dev" />
+	<global-property doc:name="Global Property" doc:id="db16c2ff-b942-4be9-9af3-b7d39513fdb4" name="mule.key" value="Dmg81Q0xAsW!rrha" />
+	<configuration-properties doc:name="Configuration properties" doc:id="2eca0d52-7d24-47c3-a3b4-dff903a2b8a8" file="api/${env}-config.yaml" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="3599a2d1-b858-47ad-96df-7709e4d0b81a" file="api/${env}-secure-config.yaml" key="${mule.key}" />
+	<error-handler name="Error-Handling" doc:id="9ccd65b1-6b45-4275-a058-e4e1e3f50fba" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="f9f06780-0e21-4d60-9e56-bb96990e5b72" type="ANY">
+			<logger level="ERROR" doc:name="Logger" doc:id="57af765c-7d30-465c-81c5-7bd1fb70edd2" message="#[payload]"/>
+		</on-error-continue>
+	</error-handler>
+	<flow name="select" doc:id="2ac61c38-68af-418b-b4df-66c43ab873b8">
+		<try doc:name="Try" doc:id="e7a3ba74-1b2b-407c-9fc8-245e0e3e37fb">
+			<until-successful maxRetries="5" doc:name="Until Successful" doc:id="81bb65c6-e6a9-4bff-8ab9-365c03795ac9" millisBetweenRetries="30000">
+				<db:select doc:name="Select" doc:id="b760777e-b542-4dfc-aced-a4348ea28e98" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from empdetails]]></db:sql>
+		</db:select>
+			</until-successful>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="36446039-90ca-44dc-9665-e2cc0f348ef1">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="insert" doc:id="a2d04999-d414-4b3c-bcb3-8e2329f37c74">
+		<ee:transform doc:name="Transform Message" doc:id="423b6e61-af47-4222-b3c0-cd4b54bb5630">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="87dc254f-528d-48fb-ab78-7f7c6cf0c8aa">
+			<db:insert doc:name="Insert" doc:id="4e816388-4a32-4f0c-a7dd-06db6d978a9f" config-ref="Database_Config">
+				<db:sql><![CDATA[insert into empdetails values(:employeeId, :jobTitle, :department, :hireDate, :salary, :manager, :status)]]></db:sql>
+				<db:input-parameters><![CDATA[#[{
+	employeeId: payload.employeeId,
+	jobTitle: payload.jobTitle,
+	department: payload.department,
+	hireDate: payload.hireDate,
+	salary: payload.salary,
+	manager: payload.manager,
+	status: payload.status
+}]]]></db:input-parameters>
+			</db:insert>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="a398413e-1053-4410-b435-d2c53dd5020f">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Record inserted successfully!!"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="update" doc:id="8481b652-ccd6-4738-9b4d-70e19185352a">
+		<try doc:name="Try" doc:id="3f45f3d2-8f59-49c3-a2e2-c841323a6d8b">
+			<db:update doc:name="Update" doc:id="e2b884a6-3dd5-4033-b39a-6bd22bd844a6" config-ref="Database_Config">
+			<db:sql><![CDATA[update empdetails set jobTitle = :jobTitle, department = :department, hireDate = :hireDate, salary = :salary, manager = :manager, status = :status where employeeId= :id]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	jobTitle: payload.jobTitle,
+	department: payload.department,
+	hireDate: payload.hireDate,
+	salary: payload.salary,
+	manager: payload.manager,
+	status: payload.status,
+	id: attributes.queryParams.id
+}]]]></db:input-parameters>
+		</db:update>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="33a3690a-1764-43bb-a664-596aaf3c8ee4">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Updated Successfully!!"]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+	</flow>
+	<flow name="delete" doc:id="7744dc07-44c6-4451-b66c-54cae73d6256">
+		<try doc:name="Try" doc:id="600d1161-351a-46a5-92e1-22ba88decf43">
+			<db:update doc:name="Update" doc:id="8f3af255-0d7d-40bf-91f9-d19257fb9081" config-ref="Database_Config">
+			<db:sql><![CDATA[update empdetails set status = "terminated" where employeeId= :id]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	id: attributes.queryParams.id
+}]]]></db:input-parameters>
+		</db:update>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="e8115675-cd24-4921-83d3-43993a0ade5c">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Deleted Successfully!!"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="selectempPersonal" doc:id="99f69fb2-0f56-4fd5-8b9f-7c23fc349f74">
+		<try doc:name="Try" doc:id="e4438c20-71d9-4cea-bfc4-130c50af14e7">
+			<until-successful maxRetries="5" doc:name="Until Successful" doc:id="ca16ebe5-4e85-4f69-8e91-433078afe1e7" millisBetweenRetries="30000">
+				<db:select doc:name="Select" doc:id="0bbc9524-89d4-4540-8727-ca04f6c5f747" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from emppersonal]]></db:sql>
+		</db:select>
+			</until-successful>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="55db6bf3-0dba-4f1d-b799-aaa82d6e2a9a">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="bulkInsert" doc:id="95a9e17b-5132-4810-bbef-3ccc405acc70" >
+		<ee:transform doc:name="Transform Message" doc:id="b221f91a-e193-48d9-bdd2-ea9364e5b5db" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="de768799-6b60-42e1-8f83-aab9dd21e58c" >
+			<db:bulk-insert doc:name="Bulk insert" doc:id="482bc35e-b228-435d-b698-a3f770a4b17b" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into emppersonal values(:employeeId, :firstName, :lastName, :dob, :address, :email, :phoneNumber)]]></db:sql>
+		</db:bulk-insert>
+			<error-handler ref="Error-Handling" />
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="ad291b50-6542-441b-875b-a5b4b7c8f509" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Records inserted Successfully as Bulk"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="updatePersonal_info" doc:id="40437de9-848e-4d06-87d1-be9732a48876">
+		<db:update doc:name="Update emppersonal" doc:id="98a50725-87e1-408e-8b38-59aa1df7cf1b" config-ref="Database_Config">
+			<db:sql><![CDATA[update emppersonal set employeeId =:employeeId, firstName=:firstName, lastName=:lastName, dob=:dob, address=:address, email=:email, phoneNumber=:phoneNumber where employeeId= :id]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	employeeId: payload.employeeId,
+	firstName: payload.firstName,
+	lastName: payload.lastName,
+	dob: payload.dob,
+	address: payload.address,
+	email: payload.email,
+	phoneNumber: payload.phoneNumber,
+	id: attributes.queryParams.id
+}]]]></db:input-parameters>
+		</db:update>
+		<ee:transform doc:name="Transform Message" doc:id="94273dcb-6ae6-4bef-9524-8a5c545aa11d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Employee personal info updated successfully!!"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

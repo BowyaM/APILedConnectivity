@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_bc923c48_4cb0_4086_802a_296da1cb15c2_Output_Variables_employees = Any
+
