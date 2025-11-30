@@ -1,4 +1,0 @@
-%dw 2.0
-
-type auto_bc923c48_4cb0_4086_802a_296da1cb15c2_Output_Payload = Array<{  hireDate: String,   manager: String,   jobTitle: String,   employeeId: Number,   department: String,   salary: Number,   status: "onleave" | "active" | "terminated",   _?: Any}>
-

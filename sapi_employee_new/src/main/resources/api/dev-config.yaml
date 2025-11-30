@@ -1,8 +1,0 @@
-mysql:
-  host: "localhost"
-  port: "3306"
-  user: "root"
-  db: "mule"
-  
-http:  
-  port: "8081" 
